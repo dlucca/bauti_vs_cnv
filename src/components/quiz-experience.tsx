@@ -22,6 +22,7 @@ export function QuizExperience() {
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [history, setHistory] = useState<AttemptResult[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const rawHistory = window.localStorage.getItem(STORAGE_KEY);
@@ -77,8 +78,20 @@ export function QuizExperience() {
     setResult(null);
     setSubmitted(false);
     setCurrentQuestions(nextQuestions);
+    setActiveIndex(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  function goToQuestion(index: number) {
+    setActiveIndex(Math.max(0, Math.min(index, currentQuestions.length - 1)));
+  }
+
+  const activeQuestion = currentQuestions[activeIndex];
+  const selected = activeQuestion ? answers[activeQuestion.id] : undefined;
+  const activeArea = activeQuestion ? areaMap.get(activeQuestion.area) : null;
+  const isCorrect = submitted && activeQuestion ? selected === activeQuestion.correctIndex : false;
+  const isWrong =
+    submitted && activeQuestion ? selected !== undefined && selected !== activeQuestion.correctIndex : false;
 
   return (
     <div className="quiz-shell">
@@ -133,57 +146,110 @@ export function QuizExperience() {
         ))}
       </section>
 
-      <section className="question-list" aria-label="Simulacro">
-        {currentQuestions.map((question, index) => {
-          const selected = answers[question.id];
-          const isCorrect = submitted && selected === question.correctIndex;
-          const isWrong = submitted && selected !== undefined && selected !== question.correctIndex;
-          const area = areaMap.get(question.area);
+      <section className="question-stage" aria-label="Simulacro">
+        <div className="question-stage-header">
+          <div className="question-stage-meta">
+            <span>Stage {String(activeIndex + 1).padStart(2, "0")}</span>
+            <strong>{activeArea?.title ?? activeQuestion?.area}</strong>
+          </div>
+          <div className="question-stage-meter" aria-hidden="true">
+            <div
+              className="question-stage-meter-fill"
+              style={{ width: `${((activeIndex + 1) / currentQuestions.length) * 100}%` }}
+            />
+          </div>
+        </div>
 
-          return (
-            <article key={question.id} className="question-card">
-              <div className="question-meta">
-                <span>Stage {String(index + 1).padStart(2, "0")}</span>
-                <span>{area?.title ?? question.area}</span>
-              </div>
-              <h2>{question.prompt}</h2>
+        {activeQuestion ? (
+          <article className="question-card spotlight-card">
+            <div className="question-meta">
+              <span>Checkpoint activo</span>
+              <span>{activeArea?.title ?? activeQuestion.area}</span>
+            </div>
+            <h2>{activeQuestion.prompt}</h2>
 
-              <div className="options">
-                {question.options.map((option, optionIndex) => {
-                  const checked = selected === optionIndex;
-                  const showCorrect = submitted && optionIndex === question.correctIndex;
+            <div className="options">
+              {activeQuestion.options.map((option, optionIndex) => {
+                const checked = selected === optionIndex;
+                const showCorrect = submitted && optionIndex === activeQuestion.correctIndex;
 
-                  return (
-                    <label
-                      key={option}
-                      className={[
-                        "option",
-                        checked ? "selected" : "",
-                        showCorrect ? "correct" : "",
-                        isWrong && checked ? "incorrect" : ""
-                      ].join(" ").trim()}
-                    >
-                      <input
-                        type="radio"
-                        name={`question-${question.id}`}
-                        checked={checked}
-                        onChange={() => handleAnswer(question.id, optionIndex)}
-                        disabled={submitted}
-                      />
-                      <span>{option}</span>
-                    </label>
-                  );
-                })}
-              </div>
+                return (
+                  <label
+                    key={option}
+                    className={[
+                      "option",
+                      checked ? "selected" : "",
+                      showCorrect ? "correct" : "",
+                      isWrong && checked ? "incorrect" : ""
+                    ].join(" ").trim()}
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${activeQuestion.id}`}
+                      checked={checked}
+                      onChange={() => handleAnswer(activeQuestion.id, optionIndex)}
+                      disabled={submitted}
+                    />
+                    <span>{option}</span>
+                  </label>
+                );
+              })}
+            </div>
 
-              {submitted ? (
-                <p className={`explanation ${isCorrect ? "ok" : "review"}`}>
-                  {question.explanation}
-                </p>
-              ) : null}
-            </article>
-          );
-        })}
+            {submitted ? (
+              <p className={`explanation ${isCorrect ? "ok" : "review"}`}>
+                {activeQuestion.explanation}
+              </p>
+            ) : null}
+          </article>
+        ) : null}
+
+        <div className="question-nav">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => goToQuestion(activeIndex - 1)}
+            disabled={activeIndex === 0}
+          >
+            Anterior
+          </button>
+          <p>
+            {selected !== undefined
+              ? "Respuesta guardada para este checkpoint."
+              : "Selecciona una opcion y sigue avanzando."}
+          </p>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => goToQuestion(activeIndex + 1)}
+            disabled={activeIndex === currentQuestions.length - 1}
+          >
+            Siguiente
+          </button>
+        </div>
+
+        <div className="question-dots" aria-label="Navegacion de preguntas">
+          {currentQuestions.map((question, index) => {
+            const answered = answers[question.id] !== undefined;
+            const isActive = index === activeIndex;
+
+            return (
+              <button
+                key={question.id}
+                type="button"
+                className={[
+                  "question-dot",
+                  answered ? "answered" : "",
+                  isActive ? "active" : ""
+                ].join(" ").trim()}
+                onClick={() => goToQuestion(index)}
+                aria-label={`Ir a la pregunta ${index + 1}`}
+              >
+                {index + 1}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <section className="actions">
