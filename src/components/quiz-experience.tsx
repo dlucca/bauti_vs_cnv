@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { questions } from "@/data/questions";
 import { studyAreas } from "@/data/study-areas";
 import {
   buildAdaptiveQuestionSet,
   getRecommendation,
   getWeakAreas,
-  QUESTIONS_PER_AREA,
-  QUESTIONS_PER_RUN,
   evaluateAttempt
 } from "@/lib/evaluation";
 import { AttemptResult, Question } from "@/lib/types";
@@ -24,6 +21,7 @@ export function QuizExperience() {
   const [history, setHistory] = useState<AttemptResult[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [slideDir, setSlideDir] = useState<'right' | 'left'>('right');
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const rawHistory = window.localStorage.getItem(STORAGE_KEY);
@@ -48,19 +46,28 @@ export function QuizExperience() {
 
   const weakAreas = result ? getWeakAreas(result) : [];
   const currentRun = history.length + (submitted ? 0 : 1);
-  const questionPoolByArea = useMemo(() => {
-    return studyAreas.map((area) => ({
-      ...area,
-      pool: questions.filter((question) => question.area === area.id).length
-    }));
-  }, []);
 
   const areaMap = useMemo(() => {
     return new Map(studyAreas.map((area) => [area.id, area]));
   }, []);
 
+  function goToQuestion(index: number) {
+    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    const clamped = Math.max(0, Math.min(index, currentQuestions.length - 1));
+    setSlideDir(clamped > activeIndex ? 'right' : 'left');
+    setActiveIndex(clamped);
+  }
+
   function handleAnswer(questionId: number, optionIndex: number) {
     setAnswers((current) => ({ ...current, [questionId]: optionIndex }));
+
+    if (!submitted && activeIndex < currentQuestions.length - 1) {
+      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+      autoAdvanceRef.current = setTimeout(() => {
+        setSlideDir('right');
+        setActiveIndex((i) => i + 1);
+      }, 480);
+    }
   }
 
   function handleSubmit() {
@@ -74,19 +81,15 @@ export function QuizExperience() {
   }
 
   function handleReset() {
+    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     const nextQuestions = buildAdaptiveQuestionSet(history);
     setAnswers({});
     setResult(null);
     setSubmitted(false);
     setCurrentQuestions(nextQuestions);
     setActiveIndex(0);
+    setSlideDir('right');
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function goToQuestion(index: number) {
-    const clamped = Math.max(0, Math.min(index, currentQuestions.length - 1));
-    setSlideDir(clamped > activeIndex ? 'right' : 'left');
-    setActiveIndex(clamped);
   }
 
   const activeQuestion = currentQuestions[activeIndex];
@@ -95,6 +98,8 @@ export function QuizExperience() {
   const isCorrect = submitted && activeQuestion ? selected === activeQuestion.correctIndex : false;
   const isWrong =
     submitted && activeQuestion ? selected !== undefined && selected !== activeQuestion.correctIndex : false;
+  const answeredCount = Object.keys(answers).length;
+  const isLastQuestion = activeIndex === currentQuestions.length - 1;
 
   return (
     <div className="quiz-shell">
@@ -116,49 +121,21 @@ export function QuizExperience() {
           <div className="hud-panel accent">
             <span>Progreso</span>
             <strong>{completion}%</strong>
-            <small>{Object.keys(answers).length} / {currentQuestions.length} checkpoints</small>
+            <small>{answeredCount} / {currentQuestions.length} checkpoints</small>
           </div>
         </div>
-      </section>
-
-      <section className="summary-strip">
-        <article>
-          <span>Modo de juego</span>
-          <strong>Next.js + TypeScript</strong>
-          <p>Deploy natural en Vercel y camino simple para sumar base de datos, login y analytics.</p>
-        </article>
-        <article>
-          <span>Banco</span>
-          <strong>{questions.length} preguntas / 6 modulos</strong>
-          <p>Cada intento usa 10 por modulo y rota segun errores previos, exposicion y nivel de dominio.</p>
-        </article>
-        <article>
-          <span>Feedback</span>
-          <strong>Diagnostico + lectura corta</strong>
-          <p>Score total, precision por modulo y refuerzo breve generado desde tus errores reales del run.</p>
-        </article>
-      </section>
-
-      <section className="module-grid">
-        {questionPoolByArea.map((area) => (
-          <article key={area.id} className="module-card">
-            <span>{area.title}</span>
-            <strong>{QUESTIONS_PER_AREA} por run · pool {area.pool}</strong>
-            <p>{area.description}</p>
-          </article>
-        ))}
       </section>
 
       <section className="question-stage" aria-label="Simulacro">
         <div className="question-stage-header">
           <div className="question-stage-meta">
-            <span>Stage {String(activeIndex + 1).padStart(2, "0")}</span>
+            <span>Stage {String(activeIndex + 1).padStart(2, "0")} / {String(currentQuestions.length).padStart(2, "0")}</span>
             <strong>{activeArea?.title ?? activeQuestion?.area}</strong>
           </div>
           <div className="question-stage-meter" aria-hidden="true">
             <div
               className="question-stage-meter-fill"
-              style={{ width: `${((activeIndex + 1) / currentQuestions.length) * 100}%` }}
+              style={{ width: `${((answeredCount) / currentQuestions.length) * 100}%` }}
             />
           </div>
         </div>
@@ -217,56 +194,35 @@ export function QuizExperience() {
             Anterior
           </button>
           <p>
-            {selected !== undefined
-              ? "Respuesta guardada para este checkpoint."
-              : "Selecciona una opcion y sigue avanzando."}
+            {submitted
+              ? (isCorrect ? "Correcto." : "Incorrecto.")
+              : selected !== undefined
+                ? isLastQuestion ? "Ultima pregunta respondida." : "Avanzando..."
+                : "Selecciona una opcion."}
           </p>
           <button
             type="button"
             className="secondary-button"
             onClick={() => goToQuestion(activeIndex + 1)}
-            disabled={activeIndex === currentQuestions.length - 1}
+            disabled={isLastQuestion}
           >
             Siguiente
           </button>
-        </div>
-
-        <div className="question-dots" aria-label="Navegacion de preguntas">
-          {currentQuestions.map((question, index) => {
-            const answered = answers[question.id] !== undefined;
-            const isActive = index === activeIndex;
-
-            return (
-              <button
-                key={question.id}
-                type="button"
-                className={[
-                  "question-dot",
-                  answered ? "answered" : "",
-                  isActive ? "active" : ""
-                ].join(" ").trim()}
-                onClick={() => goToQuestion(index)}
-                aria-label={`Ir a la pregunta ${index + 1}`}
-              >
-                {index + 1}
-              </button>
-            );
-          })}
         </div>
       </section>
 
       <section className="actions">
         <button
-          className={`primary-button${!submitted && Object.keys(answers).length === currentQuestions.length ? ' ready' : ''}`}
+          className={`primary-button${!submitted && answeredCount === currentQuestions.length ? ' ready' : ''}`}
           onClick={submitted ? handleReset : handleSubmit}
-          disabled={!submitted && Object.keys(answers).length !== currentQuestions.length}
+          disabled={!submitted && answeredCount !== currentQuestions.length}
         >
           {submitted ? "Nuevo intento" : "Finalizar simulacro"}
         </button>
         <p>
           {submitted
             ? "Ya puedes iniciar otro run y ver si sube tu precision por modulo."
-            : "Para desbloquear el resultado final, completa este run adaptativo de 60 checkpoints."}
+            : `${answeredCount} de ${currentQuestions.length} respondidas. Completa el run para desbloquear el resultado.`}
         </p>
       </section>
 
