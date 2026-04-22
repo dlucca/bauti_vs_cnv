@@ -1,6 +1,6 @@
-# Examenbau CNV
+# Bauti vs. la CNV
 
-Base para una experiencia mobile-first de preparacion del examen de idoneidad CNV con estetica arcade retro.
+Base para una experiencia mobile-first de preparacion del examen de idoneidad CNV con estetica arcade retro y una identidad mas juguetona.
 
 ## Stack elegido
 

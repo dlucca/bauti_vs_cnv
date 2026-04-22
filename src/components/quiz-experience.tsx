@@ -14,7 +14,7 @@ import {
 } from "@/lib/evaluation";
 import { AttemptResult, Question } from "@/lib/types";
 
-const STORAGE_KEY = "cnv-attempt-history";
+const STORAGE_KEY = "bauti-vs-la-cnv-attempt-history";
 
 export function QuizExperience() {
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>(() => buildAdaptiveQuestionSet([]));
@@ -84,13 +84,10 @@ export function QuizExperience() {
     <div className="quiz-shell">
       <section className="hero-block">
         <div className="hero-copyblock">
-          <p className="eyebrow">Examenbau // Arcade Mode</p>
-          <h1>Simulador CNV con look de videogame retro de los 80.</h1>
+          <p className="eyebrow">BAUTI VS. LA CNV // Arcade Mode</p>
+          <h1>BAUTI VS. LA CNV</h1>
           <p className="hero-copy">
-            Pool ampliado de practica inspirado en la guia local. Cada run toma
-            {` ${QUESTIONS_PER_RUN} `}preguntas, mide tus puntos debiles y
-            rearma el siguiente intento reforzando donde vienes fallando sin
-            repetir siempre el mismo examen.
+            Que la CNV no te rompa el orto.
           </p>
         </div>
 
@@ -110,7 +107,7 @@ export function QuizExperience() {
 
       <section className="summary-strip">
         <article>
-          <span>Motor</span>
+          <span>Modo de juego</span>
           <strong>Next.js + TypeScript</strong>
           <p>Deploy natural en Vercel y camino simple para sumar base de datos, login y analytics.</p>
         </article>

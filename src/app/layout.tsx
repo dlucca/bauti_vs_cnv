@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Examenbau CNV",
-  description: "Simulador mobile-first para preparar el examen de idoneidad CNV con diagnostico por areas."
+  title: "BAUTI VS. LA CNV",
+  description: "Que la CNV no te rompa el orto."
 };
 
 export default function RootLayout({
