@@ -184,31 +184,6 @@ export function QuizExperience() {
           </article>
         ) : null}
 
-        <div className="question-nav">
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => goToQuestion(activeIndex - 1)}
-            disabled={activeIndex === 0}
-          >
-            Anterior
-          </button>
-          <p>
-            {submitted
-              ? (isCorrect ? "Correcto." : "Incorrecto.")
-              : selected !== undefined
-                ? isLastQuestion ? "Ultima pregunta respondida." : "Avanzando..."
-                : "Selecciona una opcion."}
-          </p>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => goToQuestion(activeIndex + 1)}
-            disabled={isLastQuestion}
-          >
-            Siguiente
-          </button>
-        </div>
       </section>
 
       <section className="actions">
