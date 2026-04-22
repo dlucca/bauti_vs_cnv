@@ -23,6 +23,7 @@ export function QuizExperience() {
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [history, setHistory] = useState<AttemptResult[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [slideDir, setSlideDir] = useState<'right' | 'left'>('right');
 
   useEffect(() => {
     const rawHistory = window.localStorage.getItem(STORAGE_KEY);
@@ -83,7 +84,9 @@ export function QuizExperience() {
   }
 
   function goToQuestion(index: number) {
-    setActiveIndex(Math.max(0, Math.min(index, currentQuestions.length - 1)));
+    const clamped = Math.max(0, Math.min(index, currentQuestions.length - 1));
+    setSlideDir(clamped > activeIndex ? 'right' : 'left');
+    setActiveIndex(clamped);
   }
 
   const activeQuestion = currentQuestions[activeIndex];
@@ -161,7 +164,7 @@ export function QuizExperience() {
         </div>
 
         {activeQuestion ? (
-          <article className="question-card spotlight-card">
+          <article key={activeIndex} data-dir={slideDir} className="question-card spotlight-card">
             <div className="question-meta">
               <span>Checkpoint activo</span>
               <span>{activeArea?.title ?? activeQuestion.area}</span>
@@ -254,7 +257,7 @@ export function QuizExperience() {
 
       <section className="actions">
         <button
-          className="primary-button"
+          className={`primary-button${!submitted && Object.keys(answers).length === currentQuestions.length ? ' ready' : ''}`}
           onClick={submitted ? handleReset : handleSubmit}
           disabled={!submitted && Object.keys(answers).length !== currentQuestions.length}
         >

@@ -451,6 +451,171 @@ input {
   line-height: 1.55;
 }
 
+/* ========== ANIMATIONS ========== */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(44px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-44px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes wrong-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-8px); }
+  35% { transform: translateX(8px); }
+  55% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes correct-flash {
+  0% { background: color-mix(in srgb, var(--correct) 34%, black); }
+  35% { background: color-mix(in srgb, var(--correct) 62%, black); box-shadow: 0 0 18px color-mix(in srgb, var(--correct) 48%, transparent); }
+  100% { background: color-mix(in srgb, var(--correct) 34%, black); }
+}
+
+@keyframes score-in {
+  from { opacity: 0; transform: scale(0.93) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes ready-glow {
+  0%, 100% {
+    box-shadow: 4px 4px 0 color-mix(in srgb, black 55%, transparent);
+  }
+  50% {
+    box-shadow: 4px 4px 0 color-mix(in srgb, black 55%, transparent),
+                0 0 26px color-mix(in srgb, var(--accent) 60%, transparent),
+                0 0 8px color-mix(in srgb, var(--brand) 70%, transparent);
+  }
+}
+
+@keyframes meter-shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* Page entrance — staggered fade-up per section */
+.hero-block      { animation: fade-up 560ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.summary-strip   { animation: fade-up 560ms 70ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.module-grid     { animation: fade-up 560ms 140ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.question-stage  { animation: fade-up 560ms 210ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.actions         { animation: fade-up 560ms 280ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.history-panel   { animation: fade-up 560ms 350ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Blinking cursor on h1 */
+.hero-block h1::after {
+  content: '_';
+  animation: blink 1.1s step-end infinite;
+  color: var(--brand);
+}
+
+/* Question card slide — key-based remount drives fresh animation */
+.spotlight-card {
+  animation: slide-in-right 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.spotlight-card[data-dir="left"] {
+  animation-name: slide-in-left;
+}
+
+/* Answer reveal animations triggered by class addition on submit */
+.option.correct {
+  animation: correct-flash 500ms 200ms ease-in-out both;
+}
+.option.incorrect {
+  animation: wrong-shake 400ms 200ms ease-in-out both;
+}
+
+/* Progress bar smooth fill + shimmer */
+.question-stage-meter-fill {
+  transition: width 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  background: linear-gradient(90deg, var(--brand), var(--accent), var(--brand), var(--accent));
+  background-size: 300% 100%;
+  animation: meter-shimmer 2.4s linear infinite;
+}
+
+/* Results dramatic entrance */
+.results-grid {
+  animation: score-in 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Submit button glow pulse when all answers filled in */
+.primary-button.ready {
+  animation: ready-glow 1.8s ease-in-out infinite;
+}
+
+/* Button interactions */
+.primary-button {
+  transition: transform 130ms ease, opacity 200ms ease;
+  cursor: pointer;
+}
+.primary-button:not(:disabled):hover {
+  transform: translate(-2px, -2px);
+}
+.primary-button:not(:disabled):active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 color-mix(in srgb, black 55%, transparent);
+}
+
+.secondary-button {
+  transition: transform 130ms ease, box-shadow 130ms ease, border-color 130ms ease, opacity 200ms ease;
+  cursor: pointer;
+}
+.secondary-button:not(:disabled):hover {
+  transform: translate(-2px, -2px);
+  border-color: var(--brand);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--brand) 80%, black);
+}
+.secondary-button:not(:disabled):active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 color-mix(in srgb, black 55%, transparent);
+}
+
+/* Option cursor + active press */
+.option {
+  cursor: pointer;
+}
+.option:not([disabled="true"]):active {
+  transform: translate(1px, 1px) scale(0.99) !important;
+}
+
+/* Question dot interactions */
+.question-dot {
+  cursor: pointer;
+  transition: transform 110ms ease, box-shadow 110ms ease, border-color 110ms ease,
+              color 110ms ease, background-color 110ms ease;
+}
+.question-dot:not(.active):hover {
+  border-color: var(--brand);
+  color: var(--text);
+  transform: scale(1.1);
+}
+.question-dot:active {
+  transform: scale(0.92);
+}
+
+/* Reduced motion — accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @media (min-width: 768px) {
   .page {
     padding: 1.5rem;
